@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "fastapi-clean-architecture"
+version = "0.1.0"
+description = ""
+authors = ["FacerAin <ywsong.dev@kakao.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.115.11"
+uvicorn = {extras = ["standard"], version = "^0.34.0"}
+py-ulid = "^1.0.3"
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
