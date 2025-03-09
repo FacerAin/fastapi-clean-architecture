@@ -6,13 +6,15 @@ authors = ["FacerAin <ywsong.dev@kakao.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.13"
 fastapi = "^0.115.11"
 uvicorn = {extras = ["standard"], version = "^0.34.0"}
 py-ulid = "^1.0.3"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 mysqlclient = "^2.2.7"
 dependency-injector = "^4.46.0"
+sqlalchemy = "^2.0.38"
+alembic = "^1.15.1"
 
 
 [build-system]

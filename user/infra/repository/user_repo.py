@@ -14,7 +14,8 @@ class UserRepository(IUserRepository):
             email=user.email,
             password=user.password,
             created_at=user.created_at,
-            updated_at=user.updated_at
+            updated_at=user.updated_at,
+            memo=user.memo
         )
 
         with SessionLocal() as session:
@@ -27,3 +28,33 @@ class UserRepository(IUserRepository):
         if not user:
             raise HTTPException(status_code=422, detail="User not found")
         return UserVO(**row_to_dict(user))
+    
+    def find_by_id(self, id: str) -> UserVO:
+        with SessionLocal() as session:
+            user = session.query(User).filter(User.id == id).first()
+        if not user:
+            raise HTTPException(status_code=422, detail="User not found")
+        
+        return UserVO(**row_to_dict(user))
+    
+    def update(self, user: UserVO):
+        with SessionLocal() as session:
+            session.query(User).filter(User.id == user.id).update({
+                "name": user.name,
+                "password": user.password,
+                "updated_at": user.updated_at,
+                "memo": user.memo
+            })
+            session.commit()
+        
+        return user
+    
+    def get_users(self,
+                  page: int = 1,
+                  items_per_page: int = 10) -> tuple[int, list[UserVO]]:
+        with SessionLocal() as session:
+            query = session.query(User)
+            total = query.count()
+            offset = (page - 1) * items_per_page
+            users = query.offset(offset).limit(items_per_page).all()
+        return total, [UserVO(**row_to_dict(user)) for user in users]
