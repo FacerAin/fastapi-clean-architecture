@@ -23,10 +23,10 @@ class UserService:
         except Exception as e:
             if getattr(e, "status_code", None) != 422:
                 raise e
-        
+
         if _user:
             raise EmailAlreadyExistsException("Email already exists")
-        
+
         now = datetime.now()
         user: User = User(
             id=self.ulid.generate(),
@@ -39,28 +39,30 @@ class UserService:
         )
         self.user_repo.save(user)
         return user
-    
-    def update_user(self, user_id: str, name: str | None = None, password: str | None = None):
+
+    def update_user(
+        self, user_id: str, name: str | None = None, password: str | None = None
+    ):
         user = self.user_repo.find_by_id(user_id)
         if not user:
             raise UserNotFoundException("User not found")
-        
+
         if name:
             user.name = name
         if password:
             user.password = self.crypto.encrypt(password)
-        
+
         user.updated_at = datetime.now()
         self.user_repo.update(user)
         return user
-    
+
     def get_users(self, page: int, items_per_page: int) -> tuple[int, list[User]]:
         return self.user_repo.get_users(page, items_per_page)
-    
+
     def delete_user(self, user_id: str):
         user = self.user_repo.find_by_id(user_id)
         if not user:
             raise UserNotFoundException("User not found")
-        
+
         self.user_repo.delete(user_id)
         return user
