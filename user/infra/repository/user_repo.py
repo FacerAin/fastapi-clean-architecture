@@ -58,3 +58,9 @@ class UserRepository(IUserRepository):
             offset = (page - 1) * items_per_page
             users = query.offset(offset).limit(items_per_page).all()
         return total, [UserVO(**row_to_dict(user)) for user in users]
+    
+    def delete(self, id: str):
+        with SessionLocal() as session:
+            session.query(User).filter(User.id == id).delete()
+            session.commit()
+            
