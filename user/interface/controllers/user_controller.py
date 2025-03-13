@@ -1,7 +1,11 @@
+from datetime import datetime
+from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr, Field
 from dependency_injector.wiring import Provide, inject
 
+from common.auth import CurrentUser, get_admin_user, get_current_user
 from containers import Container
 from user.application.user_service import UserService
 from user.domain.exceptions import UserNotFoundException, EmailAlreadyExistsException
@@ -19,13 +23,22 @@ class UpdateUser(BaseModel):
     name: str | None = Field(min_length=2, max_length=32, default=None)
     password: str | None = Field(min_length=8, max_length=32, default=None)
 
+class UpdateUserBody(BaseModel):
+    name: str | None = Field(min_length=2, max_length=32, default=None)
+    password: str | None = Field(min_length=8, max_length=32, default=None)
+
 
 class UserResponse(BaseModel):
     id: str
     name: str
     email: EmailStr
-    created_at: str
-    updated_at: str
+    created_at: datetime
+    updated_at: datetime
+
+class GetUsersResponse(BaseModel):
+    total_count: int
+    page: int
+    users: list[UserResponse]
 
 
 @router.post("")
@@ -41,18 +54,15 @@ async def create_user(
         raise HTTPException(status_code=422, detail=str(e))
 
 
-@router.put("/{user_id}")
+@router.put("", response_model=UserResponse)
 @inject
-async def update_user(
-    user_id: str,
-    user: UpdateUser,
+def update_user(
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    body_data: UpdateUserBody,
     user_service: UserService = Depends(Provide[Container.user_service]),
 ):
-    try:
-        updated_user = user_service.update_user(user_id, user.name, user.password)
-        return updated_user
-    except UserNotFoundException as e:
-        raise HTTPException(status_code=422, detail=str(e))
+    user = user_service.update_user(current_user.id, body_data.name, body_data.password)
+    return user
 
 
 @router.get("")
@@ -60,19 +70,23 @@ async def update_user(
 def get_users(
     page: int = 1,
     items_per_page: int = 10,
+    current_user: CurrentUser = Depends(get_admin_user),
     user_service: UserService = Depends(Provide[Container.user_service]),
-):
+) -> GetUsersResponse:
     total, users = user_service.get_users(page, items_per_page)
-    return {"total_count": total, "page": page, "users": users}
+    return {"total_count": total, "page": page, "users": users} # type: ignore
 
 
-@router.delete("/{user_id}")
+@router.delete("", status_code=204)
 @inject
 async def delete_user(
-    user_id: str, user_service: UserService = Depends(Provide[Container.user_service])
+    current_user: Annotated[CurrentUser, Depends(get_current_user)], user_service: UserService = Depends(Provide[Container.user_service])
 ):
-    try:
-        deleted_user = user_service.delete_user(user_id)
-        return deleted_user
-    except UserNotFoundException as e:
-        raise HTTPException(status_code=422, detail=str(e))
+    user_service.delete_user(current_user.id)
+
+@router.post("/login")
+@inject
+def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], user_service: UserService = Depends(Provide[Container.user_service])):
+    access_token = user_service.login(email=form_data.username, password=form_data.password)
+    return {"access_token": access_token, "token_type": "bearer"}
+    
