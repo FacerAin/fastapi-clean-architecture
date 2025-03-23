@@ -23,6 +23,7 @@ class UpdateUser(BaseModel):
     name: str | None = Field(min_length=2, max_length=32, default=None)
     password: str | None = Field(min_length=8, max_length=32, default=None)
 
+
 class UpdateUserBody(BaseModel):
     name: str | None = Field(min_length=2, max_length=32, default=None)
     password: str | None = Field(min_length=8, max_length=32, default=None)
@@ -34,6 +35,7 @@ class UserResponse(BaseModel):
     email: EmailStr
     created_at: datetime
     updated_at: datetime
+
 
 class GetUsersResponse(BaseModel):
     total_count: int
@@ -74,19 +76,25 @@ def get_users(
     user_service: UserService = Depends(Provide[Container.user_service]),
 ) -> GetUsersResponse:
     total, users = user_service.get_users(page, items_per_page)
-    return {"total_count": total, "page": page, "users": users} # type: ignore
+    return {"total_count": total, "page": page, "users": users}  # type: ignore
 
 
 @router.delete("", status_code=204)
 @inject
 async def delete_user(
-    current_user: Annotated[CurrentUser, Depends(get_current_user)], user_service: UserService = Depends(Provide[Container.user_service])
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    user_service: UserService = Depends(Provide[Container.user_service]),
 ):
     user_service.delete_user(current_user.id)
 
+
 @router.post("/login")
 @inject
-def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], user_service: UserService = Depends(Provide[Container.user_service])):
-    access_token = user_service.login(email=form_data.username, password=form_data.password)
+def login(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    user_service: UserService = Depends(Provide[Container.user_service]),
+):
+    access_token = user_service.login(
+        email=form_data.username, password=form_data.password
+    )
     return {"access_token": access_token, "token_type": "bearer"}
-    
