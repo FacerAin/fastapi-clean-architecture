@@ -24,6 +24,9 @@ class Role(StrEnum):
 class CurrentUser:
     id: str
     role: Role
+    
+    def __str__(self):
+        return f"{self.id} ({self.role})"
 
 
 def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):

@@ -1,9 +1,11 @@
 from datetime import datetime
 
-from fastapi import HTTPException
+from fastapi import BackgroundTasks, HTTPException
 from fastapi import status
 
 from common.auth import Role, create_access_token
+from user.application.email_service import EmailService
+from user.application.send_welcome_email_task import SendWelcomeEmailTask
 from user.domain.exceptions import UserNotFoundException, EmailAlreadyExistsException
 from ulid import ULID  # type: ignore
 from user.domain.repository.user_repo import IUserRepository
@@ -14,12 +16,13 @@ from dependency_injector.wiring import inject
 
 class UserService:
     @inject
-    def __init__(self, user_repo: IUserRepository):
+    def __init__(self, user_repo: IUserRepository, email_service: EmailService):
         self.user_repo = user_repo
         self.ulid = ULID()
         self.crypto = Crypto()
+        self.email_service = email_service
 
-    def create_user(self, name: str, email: str, password: str):
+    def create_user(self, name: str, email: str, password: str, memo: str|None = None):
         _user = None
 
         try:
@@ -39,9 +42,11 @@ class UserService:
             password=self.crypto.encrypt(password),
             created_at=now,
             updated_at=now,
-            memo=user.memo,
+            memo=memo,
         )
         self.user_repo.save(user)
+
+        SendWelcomeEmailTask().run(user.email)
         return user
 
     def update_user(

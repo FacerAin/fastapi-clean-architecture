@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr, Field
 from dependency_injector.wiring import Provide, inject
@@ -47,10 +47,11 @@ class GetUsersResponse(BaseModel):
 @inject
 async def create_user(
     user: CreatedUserBody,
+    background_tasks: BackgroundTasks,
     user_service: UserService = Depends(Provide[Container.user_service]),
 ) -> UserResponse:
     try:
-        created_user = user_service.create_user(user.name, user.email, user.password)
+        created_user = user_service.create_user(user.name, user.email, user.password, background_tasks)
         return created_user
     except EmailAlreadyExistsException as e:
         raise HTTPException(status_code=422, detail=str(e))
