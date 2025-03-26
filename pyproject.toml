@@ -21,6 +21,9 @@ python-multipart = "^0.0.20"
 python-dotenv = "^1.0.1"
 pydantic-settings = "^2.8.1"
 celery = "^5.4.0"
+pytest = "^8.3.5"
+pytest-mock = "^3.14.0"
+freezegun = "^1.5.1"
 
 
 [build-system]
